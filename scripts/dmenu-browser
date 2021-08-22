@@ -1,0 +1,162 @@
+#!/bin/sh
+
+# In a Chromium based browser use the flag: --remote-debugging-port=9222 
+# e.g. brave --remote-debugging-port=9222
+
+# Dependencies: jq sqlite3
+# Dependencies with tmux: jq sqlite3 wmctrl
+
+
+BROWSER=brave
+BOOKMARK_PATH=~/.config/BraveSoftware/Brave-Browser/Default/Bookmarks
+HISTORY_PATH=~/.config/BraveSoftware/Brave-Browser/Default/History
+
+# Only show visited sites that arnt search engines in history
+BLACKLIST_HIST_SEARCH_ENGINES='duckduckgo\|google\|amazon\|ebay'
+
+# Starting MODE defaults to tabs
+case $1 in
+    b) MODE="bookmarks";;
+    h) MODE="history";;
+    *) MODE="tabs";;
+esac
+
+search() {
+    # Search engine string must contain %s to be replaced with they query
+    ENGINE=$1
+    SEARCH_QUERY=$2
+    HEX_QUERY=$(echo "$SEARCH_QUERY" | hexdump -v -e '/1 " %02x"')
+    ENGINE_SEARCH=$(echo "$ENGINE" | sed "s/%s/${HEX_QUERY% 0a}/;s/[[:space:]]/%/g")
+    $BROWSER "$ENGINE_SEARCH"
+}
+
+resolve_id_to_url(){
+    ID=$(echo "$1" | rev | cut -f1 | rev)
+    TAB_LIST=$(curl -s localhost:9222/json/list )
+    TABS_JSON=$(echo "$TAB_LIST" | sed -e "s/^'//" -e "s/'$//" | jq -r 'map(select(.type == "page") | {id: .id, url: .url})')
+    echo "$TABS_JSON" | jq -r --arg ID "$ID" '.[] | select (.id==$ID) | .url' | rev | cut -f1 | rev 
+}
+
+get_tabs(){
+    TAB_LIST=$(curl -s localhost:9222/json/list )
+    TABS_JSON=$(echo "$TAB_LIST" | sed -e "s/^'//" -e "s/'$//" | jq -r 'map(select(.type == "page") | {id: .id, title: .title})')
+    TAB_NAMES=$(echo "$TABS_JSON" | jq -r 'map(.title) | .[]') 
+    TAB_ID=$(echo "$TABS_JSON" | jq -r 'map(.id) | .[]') 
+pr -2 -t -s <<eof
+$TAB_NAMES
+$TAB_ID
+eof
+}
+
+# Uncomment for Tmux integration
+# get_panes_and_tabs(){
+#     TABS=$(get_tabs)
+#     PANES=$(tmux list-panes -a -F '#T\t#D' 2>/dev/null)
+#     if [ "$PANES" -a "$TABS" ]; then
+#         COMBINED="$PANES\\n\\n$TABS" 
+#     elif [ "$PANES" ]; then
+#         COMBINED="$PANES"
+#     elif [ "$TABS" ]; then
+#         COMBINED="$TABS"
+#     fi
+#     echo "$COMBINED"
+# }
+
+get_bookmarks(){
+    BOOK_NAME=$(jq  -r '.roots.bookmark_bar.children[].name' $BOOKMARK_PATH)
+    BOOK_URL=$(jq  -r '.roots.bookmark_bar.children[].url' $BOOKMARK_PATH)
+pr -2 -t -s <<eof
+$BOOK_NAME
+$BOOK_URL
+eof
+}
+
+get_history(){
+    HIST=/tmp/hist
+    cat $HISTORY_PATH > $HIST
+    SEP='{$$$}'
+    sqlite3 -separator $SEP  $HIST "select title, url from urls order by last_visit_time desc" | head -n 300 | grep -v ^$SEP |  tr $SEP '\t' | grep -v $BLACKLIST_HIST_SEARCH_ENGINES
+}
+
+# Main loop
+while true; do
+    if [ "$MODE" = "tabs" ]; then
+        # Uncomment for Tmux. 
+        # mode_list="get_panes_and_tabs"
+        mode_list="get_tabs" # Delete line for Tmux
+        prompt="Tabs >"
+    elif [ "$MODE" = "bookmarks" ]; then
+        mode_list="get_bookmarks"
+        prompt="Bookmarks >"
+    elif [ "$MODE" = "history" ]; then
+        mode_list="get_history"
+        prompt="History >"
+    fi
+
+    # Prompt user
+    DMENU_CHOICE=$( $mode_list | ~/src/dmenu-suite/dmenu -H "${XDG_CACHE_HOME:-$HOME/.cache/}/dmenu_run.hist" -ex "ctrl-h,ctrl-t,ctrl-d,ctrl-m,ctrl-v,shift-enter" -l 30 -i -c -p "$prompt" )
+ 
+
+    # Handle keybinds / set RESULT
+    case "$DMENU_CHOICE" in
+      shift-enter*) RESULT=$( printf "SEARCH\\t%s" "$DMENU_CHOICE" ); break;;
+      ctrl-v*) RESULT=$( printf "YANK\\t%s" "$DMENU_CHOICE" ); break;;
+      *ctrl-d*) ID_TABS=$(echo "$DMENU_CHOICE" | rev | cut -f1 | rev )
+            case "$ID_TABS" in
+              # Uncomment for Tmux integration
+              # %*) echo "$ID_TABS" | xargs -I {} tmux kill-pane -t {} ;;
+              *) echo "$ID_TABS" | xargs -I {} curl -s localhost:9222/json/close/{} >/dev/null ;;
+            esac
+            break ;;
+      ctrl-m*) MODE="bookmarks";; 
+      ctrl-t*) MODE="tabs";; 
+      ctrl-h*) MODE="history";; 
+      *) case $MODE in
+             "tabs") RESULT=$(printf "TABS\\t%s" "$DMENU_CHOICE") ;;
+             "bookmarks") RESULT=$( printf "BOOKMARKS\\t%s" "$DMENU_CHOICE" ) ;;
+             "history") RESULT=$( printf "HISTORY\\t%s" "$DMENU_CHOICE" ) ;;
+         esac
+         break;; 
+    esac
+done
+
+# Handle RESULT
+case "$RESULT" in
+    SEARCH*) QUERY=$( echo $RESULT | cut -d ' ' -f3- )
+        case $QUERY in
+            'dd '*) search 'https://duckduckgo.com/?q=%s' "${QUERY#* }" ;;
+            'ddl '*) search 'https://lite.duckduckgo.com/lite/?q=%s' "${QUERY#* }" ;;
+            'ddi '*) search 'https://duckduckgo.com/?q=%s!i' "${QUERY#* }" ;;
+            'gg '*) search 'https://www.google.com/search?q=%s' "${QUERY#* }" ;;
+            'ggi '*) search 'https://www.google.com/search?q=%s&tbm=isch' "${QUERY#* }" ;;
+            'nx '*) search 'https://search.nixos.org/packages?QUERY=%s' "${QUERY#* }" ;;
+            'wfa '*) search 'https://www.wolframalpha.com/input/?i=%s' "${QUERY#* }" ;;
+            'rd '*) search 'https://www.reddit.com/search?q=%s&utm_source=opensearch' "${QUERY#* }" ;;
+            'yt '*) search 'https://www.youtube.com/results?search_QUERY=%s' "${QUERY#* }" ;;
+            'az '*) search 'https://www.amazon.com/s/ref=nb_sb_noss_2?url=search-alias%3Daps&field-keywords=%s' "${QUERY#* }" ;;
+            'eb '*) search 'https://www.ebay.com/sch/i.html?_nkw=%s' "${QUERY#* }" ;;
+            'wd '*) search 'https://www.merriam-webster.com/dictionary/%s' "${QUERY#* }" ;;
+            '// '*) $BROWSER "${QUERY#* }" ;;
+                 *) search 'https://lite.duckduckgo.com/lite/?q=%s' "$QUERY" ;;
+        esac ;;
+    YANK*) 
+        case "$MODE" in
+            "bookmarks") echo "$RESULT" | rev | cut -f1 | rev | xclip -sel clip ;;
+            "tabs") resolve_id_to_url "$RESULT" | xclip -sel clip ;;
+            *) echo "$RESULT" | rev | cut -f1 | rev | xclip -sel clip ;;
+        esac ;; 
+    TABS*) 
+        ID_TABS=$(echo "$RESULT" | rev | cut -f1 | rev )
+        case "$ID_TABS" in
+          # Uncomment for Tmux integration
+          # %*) tmux switch-client -t "$ID_TABS"
+          #     wmctrl -i -a "$(wmctrl -l | grep TMUX  | cut -d ' ' -f1)" ;;
+          *) curl -s localhost:9222/json/activate/"$ID_TABS" >/dev/null ;;
+        esac ;;
+    BOOKMARKS*) 
+        RESULT=$(echo "$RESULT" | rev | cut -f1 | rev )
+        [ "$RESULT" ] && $BROWSER "$(echo "$RESULT" | cut -f2)" >/dev/null ;; 
+    HISTORY*) 
+        RESULT=$(echo "$RESULT" | rev | cut -f1 | rev )
+        [ "$RESULT" ] && $BROWSER "$RESULT" > /dev/null ;;
+esac
