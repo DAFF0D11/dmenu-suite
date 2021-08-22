@@ -35,6 +35,7 @@ struct item {
 	struct item *left, *right;
 	double distance;
 	int out;
+	int id; /* for multiselect */
 };
 
 static char text[BUFSIZ] = "";
@@ -47,6 +48,9 @@ static struct item *items = NULL;
 static struct item *matches, *matchend;
 static struct item *prev, *curr, *next, *sel;
 static int mon = -1, screen;
+static char *expected;
+static int *selid = NULL;
+static unsigned int selidsize = 0;
 
 static Atom clip, utf8;
 static Display *dpy;
@@ -64,6 +68,15 @@ static size_t histsz, histpos;
 
 static int (*fstrncmp)(const char *, const char *, size_t) = strncmp;
 static char *(*fstrstr)(const char *, const char *) = strstr;
+
+static int
+issel(size_t id)
+{
+	for (int i = 0;i < selidsize;i++)
+		if (selid[i] == id)
+			return 1;
+	return 0;
+}
 
 static void
 appenditem(struct item *item, struct item **list, struct item **last)
@@ -116,6 +129,7 @@ cleanup(void)
 	drw_free(drw);
 	XSync(dpy, False);
 	XCloseDisplay(dpy);
+	free(selid);
 }
 
 static char *
@@ -134,7 +148,7 @@ drawitem(struct item *item, int x, int y, int w)
 {
 	if (item == sel)
 		drw_setscheme(drw, scheme[SchemeSel]);
-	else if (item->out)
+	else if (issel(item->id))
 		drw_setscheme(drw, scheme[SchemeOut]);
 	else
 		drw_setscheme(drw, scheme[SchemeNorm]);
@@ -415,6 +429,21 @@ movewordedge(int dir)
 }
 
 static void
+expect(char *expect, XKeyEvent *ev){
+  if(sel && expected && strstr(expected,expect)){
+			for (int i = 0;i < selidsize;i++)
+				if (selid[i] != -1 && (!sel || sel->id != selid[i]))
+                printf("%s\t%s\n",expect,items[selid[i]].text);
+			if (sel && !(ev->state & ShiftMask))
+                printf("%s\t%s\n",expect,sel->text);
+			else
+                printf("%s\t%s\n",expect,text);
+                cleanup();
+                exit(1);
+ }
+}
+
+static void
 loadhistory(void)
 {
 	FILE *fp = NULL;
@@ -540,219 +569,242 @@ out:
 static void
 keypress(XKeyEvent *ev)
 {
-	char buf[32];
-	int len;
-	KeySym ksym;
-	Status status;
+    char buf[32];
+    int len;
+    KeySym ksym;
+    Status status;
 
-	len = XmbLookupString(xic, ev, buf, sizeof buf, &ksym, &status);
-	switch (status) {
-	default: /* XLookupNone, XBufferOverflow */
-		return;
-	case XLookupChars:
-		goto insert;
-	case XLookupKeySym:
-	case XLookupBoth:
-		break;
-	}
+    len = XmbLookupString(xic, ev, buf, sizeof buf, &ksym, &status);
+    switch (status) {
+    default: /* XLookupNone, XBufferOverflow */
+        return;
+    case XLookupChars:
+        goto insert;
+    case XLookupKeySym:
+    case XLookupBoth:
+        break;
+    }
 
-	if (ev->state & ControlMask) {
-		switch(ksym) {
-		case XK_a: ksym = XK_Home;      break;
-		case XK_b: ksym = XK_Left;      break;
-		case XK_c: ksym = XK_Escape;    break;
-		case XK_d: ksym = XK_Delete;    break;
-		case XK_e: ksym = XK_End;       break;
-		case XK_f: ksym = XK_Right;     break;
-		case XK_g: ksym = XK_Escape;    break;
-		case XK_h: ksym = XK_BackSpace; break;
-		case XK_i: ksym = XK_Tab;       break;
-		case XK_j: /* fallthrough */
-		case XK_J: /* fallthrough */
-		case XK_m: /* fallthrough */
-		case XK_M: ksym = XK_Return; ev->state &= ~ControlMask; break;
-		case XK_n: ksym = XK_Down;      break;
-		case XK_p: ksym = XK_Up;        break;
+    if (ev->state & ControlMask) {
+        switch(ksym) {
+        case XK_a: expect("ctrl-a",ev); ksym = XK_Home;      break;
+        case XK_b: expect("ctrl-b",ev); ksym = XK_Left;      break;
+        case XK_c: expect("ctrl-c",ev); ksym = XK_Escape;    break;
+        case XK_d: expect("ctrl-d",ev); ksym = XK_Delete;    break;
+        case XK_e: expect("ctrl-e",ev); ksym = XK_End;       break;
+        case XK_f: expect("ctrl-f",ev); ksym = XK_Right;     break;
+        case XK_g: expect("ctrl-g",ev); ksym = XK_Escape;    break;
+        case XK_h: expect("ctrl-h",ev); ksym = XK_BackSpace; break;
+        case XK_i: expect("ctrl-i",ev); ksym = XK_Tab;       break;
+        case XK_j: expect("ctrl-j",ev);  ksym = XK_Down; break;
+        case XK_J:/* fallthrough */
+        case XK_l: expect("ctrl-l",ev); break;
+        case XK_m: expect("ctrl-m",ev); /* fallthrough */
+        case XK_M: ksym = XK_Return; ev->state &= ~ControlMask; break;
+        case XK_n:
+            expect("ctrl-n",ev);
+            navhistory(1);
+            buf[0]=0;
+            break;
+        case XK_o: expect("ctrl-o",ev); break;
+        case XK_p:
+            expect("ctrl-p",ev);
+            navhistory(-1);
+            buf[0]=0;
+            break;
+        case XK_q: expect("ctrl-q",ev); break;
+        case XK_r: expect("ctrl-r",ev); break;
+        case XK_s: expect("ctrl-s",ev); break;
+        case XK_t: expect("ctrl-t",ev); break;
+        case XK_k: expect("ctrl-k",ev); ksym = XK_Up; break;
+        case XK_u: expect("ctrl-u",ev); insert(NULL, 0 - cursor); break;
+        case XK_v: expect("ctrl-v",ev);
+            XConvertSelection(dpy, (ev->state & ShiftMask) ? clip : XA_PRIMARY,
+                              utf8, utf8, win, CurrentTime);
+            return;
+        case XK_w: expect("ctrl-w",ev); /* delete word */
+            while (cursor > 0 && strchr(worddelimiters, text[nextrune(-1)]))
+                insert(NULL, nextrune(-1) - cursor);
+            while (cursor > 0 && !strchr(worddelimiters, text[nextrune(-1)]))
+                insert(NULL, nextrune(-1) - cursor);
+            break;
+        case XK_y: expect("ctrl-y",ev); break;
+        case XK_x: expect("ctrl-x",ev); break;
+        case XK_z: expect("ctrl-z",ev); break;
+        case XK_Left:
+            movewordedge(-1);
+            goto draw;
+        case XK_Right:
+            movewordedge(+1);
+            goto draw;
+        case XK_Return:
+        case XK_KP_Enter:
+            if (sel && issel(sel->id)) {
+                for (int i = 0;i < selidsize;i++)
+                    if (selid[i] == sel->id)
+                        selid[i] = -1;
+            } else {
+                for (int i = 0;i < selidsize;i++)
+                    if (selid[i] == -1) {
+                        selid[i] = sel->id;
+                        return;
+                    }
+                selidsize++;
+                selid = realloc(selid, (selidsize + 1) * sizeof(int));
+                selid[selidsize - 1] = sel->id;
+            }
+            break;
+        case XK_bracketleft:
+            cleanup();
+            exit(1);
+        default:
+            return;
+        }
+    } else if (ev->state & Mod1Mask) {
+        switch(ksym) {
+        case XK_b:
+            movewordedge(-1);
+            goto draw;
+        case XK_f:
+            movewordedge(+1);
+            goto draw;
+        case XK_g: ksym = XK_Home;  break;
+        case XK_G: ksym = XK_End;   break;
+        case XK_h: ksym = XK_Up;    break;
+        case XK_j: ksym = XK_Next;  break;
+        case XK_k: ksym = XK_Prior; break;
+        case XK_l: ksym = XK_Down;  break;
+        default:
+            return;
+        }
+    }
 
-		case XK_k: /* delete right */
-			text[cursor] = '\0';
-			match();
-			break;
-		case XK_u: /* delete left */
-			insert(NULL, 0 - cursor);
-			break;
-		case XK_w: /* delete word */
-			while (cursor > 0 && strchr(worddelimiters, text[nextrune(-1)]))
-				insert(NULL, nextrune(-1) - cursor);
-			while (cursor > 0 && !strchr(worddelimiters, text[nextrune(-1)]))
-				insert(NULL, nextrune(-1) - cursor);
-			break;
-		case XK_y: /* paste selection */
-		case XK_Y:
-			XConvertSelection(dpy, (ev->state & ShiftMask) ? clip : XA_PRIMARY,
-			                  utf8, utf8, win, CurrentTime);
-			return;
-		case XK_Left:
-		case XK_KP_Left:
-			movewordedge(-1);
-			goto draw;
-		case XK_Right:
-		case XK_KP_Right:
-			movewordedge(+1);
-			goto draw;
-		case XK_Return:
-		case XK_KP_Enter:
-			break;
-		case XK_bracketleft:
-			cleanup();
-			exit(1);
-		default:
-			return;
-		}
-	} else if (ev->state & Mod1Mask) {
-		switch(ksym) {
-		case XK_b:
-			movewordedge(-1);
-			goto draw;
-		case XK_f:
-			movewordedge(+1);
-			goto draw;
-		case XK_g: ksym = XK_Home;  break;
-		case XK_G: ksym = XK_End;   break;
-		case XK_h: ksym = XK_Up;    break;
-		case XK_j: ksym = XK_Next;  break;
-		case XK_k: ksym = XK_Prior; break;
-		case XK_l: ksym = XK_Down;  break;
-		case XK_p:
-			navhistory(-1);
-			buf[0]=0;
-			break;
-		case XK_n:
-			navhistory(1);
-			buf[0]=0;
-			break;
-		default:
-			return;
-		}
-	}
-
-	switch(ksym) {
-	default:
+    switch(ksym) {
+    default:
 insert:
-		if (!iscntrl(*buf))
-			insert(buf, len);
-		break;
-	case XK_Delete:
-	case XK_KP_Delete:
-		if (text[cursor] == '\0')
-			return;
-		cursor = nextrune(+1);
-		/* fallthrough */
-	case XK_BackSpace:
-		if (cursor == 0)
-			return;
-		insert(NULL, nextrune(-1) - cursor);
-		break;
-	case XK_End:
-	case XK_KP_End:
-		if (text[cursor] != '\0') {
-			cursor = strlen(text);
-			break;
-		}
-		if (next) {
-			/* jump to end of list and position items in reverse */
-			curr = matchend;
-			calcoffsets();
-			curr = prev;
-			calcoffsets();
-			while (next && (curr = curr->right))
-				calcoffsets();
-		}
-		sel = matchend;
-		break;
-	case XK_Escape:
-		cleanup();
-		exit(1);
-	case XK_Home:
-	case XK_KP_Home:
-		if (sel == matches) {
-			cursor = 0;
-			break;
-		}
-		sel = curr = matches;
-		calcoffsets();
-		break;
-	case XK_Left:
-	case XK_KP_Left:
-		if (cursor > 0 && (!sel || !sel->left || lines > 0)) {
-			cursor = nextrune(-1);
-			break;
-		}
-		if (lines > 0)
-			return;
-		/* fallthrough */
-	case XK_Up:
-	case XK_KP_Up:
-		if (sel && sel->left && (sel = sel->left)->right == curr) {
-			curr = prev;
-			calcoffsets();
-		}
-		break;
-	case XK_Next:
-	case XK_KP_Next:
-		if (!next)
-			return;
-		sel = curr = next;
-		calcoffsets();
-		break;
-	case XK_Prior:
-	case XK_KP_Prior:
-		if (!prev)
-			return;
-		sel = curr = prev;
-		calcoffsets();
-		break;
-	case XK_Return:
-	case XK_KP_Enter:
-		puts((sel && !(ev->state & ShiftMask)) ? sel->text : text);
-		if (!(ev->state & ControlMask)) {
-			savehistory((sel && !(ev->state & ShiftMask))
-				    ? sel->text : text);
-			cleanup();
-			exit(0);
-		}
-		if (sel)
-			sel->out = 1;
-		break;
-	case XK_Right:
-	case XK_KP_Right:
-		if (text[cursor] != '\0') {
-			cursor = nextrune(+1);
-			break;
-		}
-		if (lines > 0)
-			return;
-		/* fallthrough */
-	case XK_Down:
-	case XK_KP_Down:
-		if (sel && sel->right && (sel = sel->right) == next) {
-			curr = next;
-			calcoffsets();
-		}
-		break;
-	case XK_Tab:
-		if (!sel)
-			return;
-		strncpy(text, sel->text, sizeof text - 1);
-		text[sizeof text - 1] = '\0';
-		cursor = strlen(text);
-		match();
-		break;
-	}
+        if (!iscntrl(*buf))
+            insert(buf, len);
+        break;
+    case XK_Delete:
+        if (text[cursor] == '\0')
+            return;
+        cursor = nextrune(+1);
+        /* fallthrough */
+    case XK_BackSpace:
+        if (cursor == 0)
+            return;
+        insert(NULL, nextrune(-1) - cursor);
+        break;
+    case XK_End:
+        if (text[cursor] != '\0') {
+            cursor = strlen(text);
+            break;
+        }
+        if (next) {
+            /* jump to end of list and position items in reverse */
+            curr = matchend;
+            calcoffsets();
+            curr = prev;
+            calcoffsets();
+            while (next && (curr = curr->right))
+                calcoffsets();
+        }
+        sel = matchend;
+        break;
+    case XK_Escape:
+        cleanup();
+        exit(1);
+    case XK_Home:
+        if (sel == matches) {
+            cursor = 0;
+            break;
+        }
+        sel = curr = matches;
+        calcoffsets();
+        break;
+    case XK_Left:
+        if (cursor > 0 && (!sel || !sel->left || lines > 0)) {
+            cursor = nextrune(-1);
+            break;
+        }
+        if (lines > 0)
+            return;
+        /* fallthrough */
+    case XK_Up:
+        if (sel && sel->left && (sel = sel->left)->right == curr) {
+            curr = prev;
+            calcoffsets();
+        }
+        break;
+    case XK_Next:
+        if (!next)
+            return;
+        sel = curr = next;
+        calcoffsets();
+        break;
+    case XK_Prior:
+        if (!prev)
+            return;
+        sel = curr = prev;
+        calcoffsets();
+        break;
+    case XK_Return:
+    case XK_KP_Enter:
+        if ((ev->state & ShiftMask && expected && strstr(expected,"shift-enter"))) {
+      printf("shift-enter\t%s\n",text);
+            cleanup();
+            exit(0);
+      break;
+    } else if ((ev->state & ShiftMask)) {
+      puts((sel && !(ev->state & ShiftMask)) ? sel->text : text);
+            cleanup();
+            exit(0);
+      break;
+    }
+        if (!(ev->state & ControlMask)) {
+            for (int i = 0;i < selidsize;i++)
+                if (selid[i] != -1 && (!sel || sel->id != selid[i]))
+                    puts(items[selid[i]].text);
+      if (!sel && !(ev->state & ShiftMask) && expected && strstr(expected,"shift-enter")) {
+        savehistory(text);
+        printf("shift-enter\t%s\n",text);
+        cleanup();
+        exit(0);
+      }
+            if (sel && !(ev->state & ShiftMask))
+                puts(sel->text);
+            else
+                puts(text);
+              cleanup();
+              exit(0);
+        }
+        break;
+    case XK_Right:
+        if (text[cursor] != '\0') {
+            cursor = nextrune(+1);
+            break;
+        }
+        if (lines > 0)
+            return;
+        /* fallthrough */
+    case XK_Down:
+        if (sel && sel->right && (sel = sel->right) == next) {
+            curr = next;
+            calcoffsets();
+        }
+        break;
+    case XK_Tab:
+        if (!sel)
+            return;
+        strncpy(text, sel->text, sizeof text - 1);
+        text[sizeof text - 1] = '\0';
+        cursor = strlen(text);
+        match();
+        break;
+    }
 
 draw:
-	drawmenu();
-}
+    drawmenu();}
 
 static void
 buttonpress(XEvent *e)
@@ -905,7 +957,7 @@ readstdin(void)
 			*p = '\0';
 		if (!(items[i].stext = strdup(buf)))
 			die("cannot strdup %u bytes:", strlen(buf) + 1);
-		items[i].out = 0;
+		items[i].id = i; /* for multiselect */
 		drw_font_getexts(drw->fonts, buf, strlen(buf), &tmpmax, NULL);
 		if (tmpmax > inputw) {
 			inputw = tmpmax;
@@ -1117,6 +1169,8 @@ main(int argc, char *argv[])
 			mon = atoi(argv[++i]);
 		else if (!strcmp(argv[i], "-p"))   /* adds prompt to left of input field */
 			prompt = argv[++i];
+		else if (!strcmp(argv[i], "-ex"))   /* */
+			expected = argv[++i];
 		else if (!strcmp(argv[i], "-fn"))  /* font or font set */
 			fonts[0] = argv[++i];
 		else if (!strcmp(argv[i], "-nb"))  /* normal background color */
