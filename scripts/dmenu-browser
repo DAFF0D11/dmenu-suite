@@ -69,57 +69,42 @@ cut_result(){
     echo "$1" | rev | cut -f1 | rev
 }
 
-# Main loop
 while true; do
     if [ "$MODE" = "tabs" ]; then
-        # Uncomment for Tmux. 
-        # mode_list="get_panes_and_tabs"
-        mode_list="get_tabs" # Delete line for Tmux
-        prompt="Tabs >"
+        MODE_LIST="get_tabs" 
+        PROMPT="Tabs >"
     elif [ "$MODE" = "bookmarks" ]; then
-        mode_list="get_bookmarks"
-        prompt="Bookmarks >"
+        MODE_LIST="get_bookmarks"
+        PROMPT="Bookmarks >"
     elif [ "$MODE" = "history" ]; then
-        mode_list="get_history"
-        prompt="History >"
+        MODE_LIST="get_history"
+        PROMPT="History >"
     fi
 
-    # Prompt user
-    DMENU_CHOICE=$( $mode_list | ~/src/dmenu-suite/dmenu -H "${XDG_CACHE_HOME:-$HOME/.cache/}/dmenu-browser.hist" -ex "ctrl-h,ctrl-t,ctrl-d,ctrl-m,ctrl-y,shift-enter" -l 30 -i -c -p "$prompt" )
+    DMENU_CHOICE=$( $MODE_LIST | ../dmenu -H "${XDG_CACHE_HOME:-$HOME/.cache/}/dmenu-browser.hist" -ex "ctrl-h,ctrl-t,ctrl-d,ctrl-m,ctrl-y,shift-enter" -l 30 -i -c -p "$PROMPT" )
 
-    # Handle keybinds / set RESULT
     case "$DMENU_CHOICE" in
-        shift-enter*)
-            RESULT_MODE=SEARCH
-            RESULT=$( printf "$DMENU_CHOICE" ); break;;
-        ctrl-y*)
-            RESULT_MODE=YANK
-            RESULT=$( printf "$DMENU_CHOICE" ); break;;
-        *ctrl-d*)
-            ID_TABS=$(echo "$DMENU_CHOICE" | rev | cut -f1 | rev )
-            echo "$ID_TABS" | xargs -I {} curl -s localhost:9222/json/close/{} >/dev/null
+        ctrl-m*) MODE="bookmarks";; 
+        ctrl-t*) MODE="tabs";; 
+        ctrl-h*) MODE="history";; 
+        shift-enter*) RESULT_MODE=SEARCH; break;;
+        ctrl-y*) RESULT_MODE=YANK; break;;
+        ctrl-d*)
+            DMENU_CHOICE=$(echo "$DMENU_CHOICE" | rev | cut -f1 | rev )
+            echo "$DMENU_CHOICE" | xargs -I {} curl -s localhost:9222/json/close/{} >/dev/null
             break ;;
-      ctrl-m*) MODE="bookmarks";; 
-      ctrl-t*) MODE="tabs";; 
-      ctrl-h*) MODE="history";; 
-      *) case $MODE in
-             "tabs")
-                 RESULT_MODE=TABS
-                 RESULT=$(printf "$DMENU_CHOICE") ;;
-             "bookmarks")
-                 RESULT_MODE=BOOKMARKS
-                 RESULT=$( printf "$DMENU_CHOICE" ) ;;
-             "history")
-                 RESULT_MODE=HISTORY
-                 RESULT=$( printf "$DMENU_CHOICE" ) ;;
-         esac
+        *) case $MODE in
+                "tabs") RESULT_MODE=TABS ;;
+                "bookmarks") RESULT_MODE=BOOKMARKS ;;
+                "history") RESULT_MODE=HISTORY ;;
+            esac
          break;; 
     esac
 done
 
 # Handle RESULT
 case "$RESULT_MODE" in
-    SEARCH*) QUERY=$( echo $RESULT | cut -d ' ' -f2- )
+    SEARCH*) QUERY=$( echo $DMENU_CHOICE | cut -d ' ' -f2- )
         case $QUERY in
             'dd '*) search 'https://duckduckgo.com/?q=%s' "${QUERY#* }" ;;
             'ddl '*) search 'https://lite.duckduckgo.com/lite/?q=%s' "${QUERY#* }" ;;
@@ -138,17 +123,17 @@ case "$RESULT_MODE" in
         esac ;;
     YANK*) 
         case "$MODE" in
-            "bookmarks") cut_result "$RESULT" | xclip -sel clip ;;
-            "tabs") resolve_id_to_url "$RESULT" | xclip -sel clip ;;
-            *) cut_result "$RESULT" | xclip -sel clip ;;
+            "bookmarks") cut_result "$DMENU_CHOICE" | xclip -sel clip ;;
+            "tabs") resolve_id_to_url "$DMENU_CHOICE" | xclip -sel clip ;;
+            *) cut_result "$DMENU_CHOICE" | xclip -sel clip ;;
         esac ;; 
     TABS*) 
-        RESULT=$(cut_result "$RESULT")
-         [ "$RESULT" ] && curl -s localhost:9222/json/activate/"$RESULT" >/dev/null  ;;
+        DMENU_CHOICE=$(cut_result "$DMENU_CHOICE")
+         [ "$DMENU_CHOICE" ] && curl -s localhost:9222/json/activate/"$DMENU_CHOICE" >/dev/null  ;;
     BOOKMARKS*) 
-        RESULT=$(cut_result "$RESULT")
-        [ "$RESULT" ] && $BROWSER "$(echo "$RESULT" | cut -f2)" >/dev/null ;; 
+        DMENU_CHOICE=$(cut_result "$DMENU_CHOICE")
+        [ "$DMENU_CHOICE" ] && $BROWSER "$(echo "$DMENU_CHOICE" | cut -f2)" >/dev/null ;; 
     HISTORY*) 
-        RESULT=$(cut_result "$RESULT")
-        [ "$RESULT" ] && $BROWSER "$RESULT" > /dev/null ;;
+        DMENU_CHOICE=$(cut_result "$DMENU_CHOICE")
+        [ "$DMENU_CHOICE" ] && $BROWSER "$DMENU_CHOICE" > /dev/null ;;
 esac
