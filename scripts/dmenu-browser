@@ -48,19 +48,6 @@ $TAB_ID
 eof
 }
 
-# Uncomment for Tmux integration
-# get_panes_and_tabs(){
-#     TABS=$(get_tabs)
-#     PANES=$(tmux list-panes -a -F '#T\t#D' 2>/dev/null)
-#     if [ "$PANES" -a "$TABS" ]; then
-#         COMBINED="$PANES\\n\\n$TABS" 
-#     elif [ "$PANES" ]; then
-#         COMBINED="$PANES"
-#     elif [ "$TABS" ]; then
-#         COMBINED="$TABS"
-#     fi
-#     echo "$COMBINED"
-# }
 
 get_bookmarks(){
     BOOK_NAME=$(jq  -r '.roots.bookmark_bar.children[].name' $BOOKMARK_PATH)
@@ -76,6 +63,10 @@ get_history(){
     cat $HISTORY_PATH > $HIST
     SEP='{$$$}'
     sqlite3 -separator $SEP  $HIST "select title, url from urls order by last_visit_time desc" | head -n 300 | grep -v ^$SEP |  tr $SEP '\t' | grep -v $BLACKLIST_HIST_SEARCH_ENGINES
+}
+
+cut_result(){
+    echo "$1" | rev | cut -f1 | rev
 }
 
 # Main loop
@@ -94,42 +85,48 @@ while true; do
     fi
 
     # Prompt user
-    DMENU_CHOICE=$( $mode_list | ~/src/dmenu-suite/dmenu -H "${XDG_CACHE_HOME:-$HOME/.cache/}/dmenu_run.hist" -ex "ctrl-h,ctrl-t,ctrl-d,ctrl-m,ctrl-v,shift-enter" -l 30 -i -c -p "$prompt" )
- 
+    DMENU_CHOICE=$( $mode_list | ~/src/dmenu-suite/dmenu -H "${XDG_CACHE_HOME:-$HOME/.cache/}/dmenu-browser.hist" -ex "ctrl-h,ctrl-t,ctrl-d,ctrl-m,ctrl-y,shift-enter" -l 30 -i -c -p "$prompt" )
 
     # Handle keybinds / set RESULT
     case "$DMENU_CHOICE" in
-      shift-enter*) RESULT=$( printf "SEARCH\\t%s" "$DMENU_CHOICE" ); break;;
-      ctrl-v*) RESULT=$( printf "YANK\\t%s" "$DMENU_CHOICE" ); break;;
-      *ctrl-d*) ID_TABS=$(echo "$DMENU_CHOICE" | rev | cut -f1 | rev )
-            case "$ID_TABS" in
-              # Uncomment for Tmux integration
-              # %*) echo "$ID_TABS" | xargs -I {} tmux kill-pane -t {} ;;
-              *) echo "$ID_TABS" | xargs -I {} curl -s localhost:9222/json/close/{} >/dev/null ;;
-            esac
+        shift-enter*)
+            RESULT_MODE=SEARCH
+            RESULT=$( printf "$DMENU_CHOICE" ); break;;
+        ctrl-y*)
+            RESULT_MODE=YANK
+            RESULT=$( printf "$DMENU_CHOICE" ); break;;
+        *ctrl-d*)
+            ID_TABS=$(echo "$DMENU_CHOICE" | rev | cut -f1 | rev )
+            echo "$ID_TABS" | xargs -I {} curl -s localhost:9222/json/close/{} >/dev/null
             break ;;
       ctrl-m*) MODE="bookmarks";; 
       ctrl-t*) MODE="tabs";; 
       ctrl-h*) MODE="history";; 
       *) case $MODE in
-             "tabs") RESULT=$(printf "TABS\\t%s" "$DMENU_CHOICE") ;;
-             "bookmarks") RESULT=$( printf "BOOKMARKS\\t%s" "$DMENU_CHOICE" ) ;;
-             "history") RESULT=$( printf "HISTORY\\t%s" "$DMENU_CHOICE" ) ;;
+             "tabs")
+                 RESULT_MODE=TABS
+                 RESULT=$(printf "$DMENU_CHOICE") ;;
+             "bookmarks")
+                 RESULT_MODE=BOOKMARKS
+                 RESULT=$( printf "$DMENU_CHOICE" ) ;;
+             "history")
+                 RESULT_MODE=HISTORY
+                 RESULT=$( printf "$DMENU_CHOICE" ) ;;
          esac
          break;; 
     esac
 done
 
 # Handle RESULT
-case "$RESULT" in
-    SEARCH*) QUERY=$( echo $RESULT | cut -d ' ' -f3- )
+case "$RESULT_MODE" in
+    SEARCH*) QUERY=$( echo $RESULT | cut -d ' ' -f2- )
         case $QUERY in
             'dd '*) search 'https://duckduckgo.com/?q=%s' "${QUERY#* }" ;;
             'ddl '*) search 'https://lite.duckduckgo.com/lite/?q=%s' "${QUERY#* }" ;;
             'ddi '*) search 'https://duckduckgo.com/?q=%s!i' "${QUERY#* }" ;;
             'gg '*) search 'https://www.google.com/search?q=%s' "${QUERY#* }" ;;
             'ggi '*) search 'https://www.google.com/search?q=%s&tbm=isch' "${QUERY#* }" ;;
-            'nx '*) search 'https://search.nixos.org/packages?QUERY=%s' "${QUERY#* }" ;;
+            'nx '*) search 'https://search.nixos.org/packages?query=%s' "${QUERY#* }" ;;
             'wfa '*) search 'https://www.wolframalpha.com/input/?i=%s' "${QUERY#* }" ;;
             'rd '*) search 'https://www.reddit.com/search?q=%s&utm_source=opensearch' "${QUERY#* }" ;;
             'yt '*) search 'https://www.youtube.com/results?search_QUERY=%s' "${QUERY#* }" ;;
@@ -141,22 +138,17 @@ case "$RESULT" in
         esac ;;
     YANK*) 
         case "$MODE" in
-            "bookmarks") echo "$RESULT" | rev | cut -f1 | rev | xclip -sel clip ;;
+            "bookmarks") cut_result "$RESULT" | xclip -sel clip ;;
             "tabs") resolve_id_to_url "$RESULT" | xclip -sel clip ;;
-            *) echo "$RESULT" | rev | cut -f1 | rev | xclip -sel clip ;;
+            *) cut_result "$RESULT" | xclip -sel clip ;;
         esac ;; 
     TABS*) 
-        ID_TABS=$(echo "$RESULT" | rev | cut -f1 | rev )
-        case "$ID_TABS" in
-          # Uncomment for Tmux integration
-          # %*) tmux switch-client -t "$ID_TABS"
-          #     wmctrl -i -a "$(wmctrl -l | grep TMUX  | cut -d ' ' -f1)" ;;
-          *) curl -s localhost:9222/json/activate/"$ID_TABS" >/dev/null ;;
-        esac ;;
+        RESULT=$(cut_result "$RESULT")
+         [ "$RESULT" ] && curl -s localhost:9222/json/activate/"$RESULT" >/dev/null  ;;
     BOOKMARKS*) 
-        RESULT=$(echo "$RESULT" | rev | cut -f1 | rev )
+        RESULT=$(cut_result "$RESULT")
         [ "$RESULT" ] && $BROWSER "$(echo "$RESULT" | cut -f2)" >/dev/null ;; 
     HISTORY*) 
-        RESULT=$(echo "$RESULT" | rev | cut -f1 | rev )
+        RESULT=$(cut_result "$RESULT")
         [ "$RESULT" ] && $BROWSER "$RESULT" > /dev/null ;;
 esac
