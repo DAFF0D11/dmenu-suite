@@ -1,0 +1,168 @@
+#!/bin/sh
+
+# In a Chromium based browser use the flag: --remote-debugging-port=9222 
+# chromium --remote-debugging-port=9222
+
+# Dependencies: xclip jq sqlite3
+
+# Brave-browser
+BOOKMARK_PATH=$HOME/.config/BraveSoftware/Brave-Browser/Default/Bookmarks
+HISTORY_PATH=$HOME/.config/BraveSoftware/Brave-Browser/Default/History
+
+# Chromium
+# BOOKMARK_PATH=$HOME/.config/chromium/Default/Bookmarks
+# HISTORY_PATH=$HOME/.config/chromium/Default/History
+
+# Keep search engine queries out of history
+BLACKLIST_HIST_SEARCH_ENGINES='duckduckgo\|google\|amazon\|ebay'
+
+cut_result(){
+    echo "$1" | rev | cut -f1 | rev
+}
+
+search() {
+    # Search engine string must contain %s to be replaced with the query
+    ENGINE=$1
+    SEARCH_QUERY=$2
+    HEX_QUERY=$(echo "$SEARCH_QUERY" | hexdump -v -e '/1 " %02x"')
+    ENGINE_SEARCH=$(echo "$ENGINE" | sed "s/%s/${HEX_QUERY% 0a}/;s/[[:space:]]/%/g")
+    $BROWSER "$ENGINE_SEARCH"
+}
+search_incognito() {
+    ENGINE=$1
+    SEARCH_QUERY=$2
+    HEX_QUERY=$(echo "$SEARCH_QUERY" | hexdump -v -e '/1 " %02x"')
+    ENGINE_SEARCH=$(echo "$ENGINE" | sed "s/%s/${HEX_QUERY% 0a}/;s/[[:space:]]/%/g")
+    $BROWSER --incognito "$ENGINE_SEARCH"
+}
+
+resolve_id_to_url(){
+    ID=$(cut_result "$1")
+    TAB_LIST=$(curl -s localhost:9222/json/list )
+    TABS_JSON=$(echo "$TAB_LIST" | sed -e "s/^'//" -e "s/'$//" | jq -r 'map(select(.type == "page") | {id: .id, url: .url})')
+    echo "$TABS_JSON" | jq -r --arg ID "$ID" '.[] | select (.id==$ID) | .url' | rev | cut -f1 | rev 
+}
+
+get_tabs(){
+    TAB_LIST=$(curl -s localhost:9222/json/list )
+    TABS_JSON=$(echo "$TAB_LIST" | sed -e "s/^'//" -e "s/'$//" | jq -r 'map(select(.type == "page") | {id: .id, title: .title})')
+    TAB_NAMES=$(echo "$TABS_JSON" | jq -r 'map(.title) | .[]') 
+    TAB_ID=$(echo "$TABS_JSON" | jq -r 'map(.id) | .[]') 
+pr -2 -t -s <<eof
+$TAB_NAMES
+$TAB_ID
+eof
+}
+
+get_bookmarks(){
+    BOOK_NAME=$(jq  -r '.roots.bookmark_bar.children[].name' $BOOKMARK_PATH)
+    BOOK_URL=$(jq  -r '.roots.bookmark_bar.children[].url' $BOOKMARK_PATH)
+pr -2 -t -s <<eof
+$BOOK_NAME
+$BOOK_URL
+eof
+}
+
+get_history(){
+    HIST=/tmp/history
+    cat $HISTORY_PATH > $HIST
+    SEP='{$$$}'
+    sqlite3 -separator $SEP  $HIST "select title, url from urls order by last_visit_time desc" \
+        | head -n 300 \
+        | grep -v ^$SEP \
+        |  tr $SEP '\t' \
+        | grep -v $BLACKLIST_HIST_SEARCH_ENGINES
+}
+
+case $1 in
+    -b) MODE=BOOKMARKS ;;
+    -h) MODE=HISTORY ;;
+    *) MODE=TABS ;;
+esac
+
+while true; do
+
+    case "$MODE" in
+        TABS)
+            MODE_LIST=get_tabs
+            PROMPT="Tabs >" ;; 
+        BOOKMARKS)
+            MODE_LIST=get_bookmarks
+            PROMPT="Bookmarks >";;
+        HISTORY)
+            MODE_LIST=get_history
+            PROMPT="History >" ;;
+    esac
+    
+    DMENU_CHOICE=$( $MODE_LIST | dmenu-suite \
+                                     -H "${XDG_CACHE_HOME:-$HOME/.cache/}/dmenu-browser.hist" \
+                                     -ex "ctrl-h,ctrl-t,ctrl-d,ctrl-m,ctrl-y,shift-enter" \
+                                     -l 30 -i -c -p "$PROMPT" )
+
+    case "$DMENU_CHOICE" in
+        ctrl-m*) MODE=BOOKMARKS ;; 
+        ctrl-t*) MODE=TABS ;; 
+        ctrl-h*) MODE=HISTORY ;; 
+        shift-enter*) RESULT_MODE=SEARCH; break ;;
+        ctrl-y*) RESULT_MODE=YANK; break ;;
+        ctrl-d*)
+            DMENU_CHOICE=$(cut_result "$DMENU_CHOICE")
+            echo "$DMENU_CHOICE" | xargs -I {} curl -s localhost:9222/json/close/{} >/dev/null
+            break ;;
+        *) case "$MODE" in
+                TABS) RESULT_MODE=TABS ;;
+                BOOKMARKS) RESULT_MODE=BOOKMARKS ;;
+                HISTORY) RESULT_MODE=HISTORY ;;
+            esac
+         break ;; 
+    esac
+done
+
+case "$RESULT_MODE" in
+    SEARCH) QUERY=$( echo $DMENU_CHOICE | cut -d ' ' -f2- )
+        case "$QUERY" in
+            'dd '*) search 'https://duckduckgo.com/?q=%s' "${QUERY#* }" ;;
+            'ddl '*) search 'https://lite.duckduckgo.com/lite/?q=%s' "${QUERY#* }" ;;
+            'ddi '*) search 'https://duckduckgo.com/?q=%s!i' "${QUERY#* }" ;;
+            'gg '*) search 'https://www.google.com/search?q=%s' "${QUERY#* }" ;;
+            'ggi '*) search 'https://www.google.com/search?q=%s&tbm=isch' "${QUERY#* }" ;;
+            'nx '*) search 'https://search.nixos.org/packages?query=%s' "${QUERY#* }" ;;
+            'wfa '*) search 'https://www.wolframalpha.com/input/?i=%s' "${QUERY#* }" ;;
+            'rd '*) search 'https://www.reddit.com/search?q=%s&utm_source=opensearch' "${QUERY#* }" ;;
+            'yt '*) search 'https://www.youtube.com/results?search_QUERY=%s' "${QUERY#* }" ;;
+            'az '*) search 'https://www.amazon.com/s/ref=nb_sb_noss_2?url=search-alias%3Daps&field-keywords=%s' "${QUERY#* }" ;;
+            'eb '*) search 'https://www.ebay.com/sch/i.html?_nkw=%s' "${QUERY#* }" ;;
+            'wd '*) search 'https://www.merriam-webster.com/dictionary/%s' "${QUERY#* }" ;;
+            'ii '*) search_incognito 'https://lite.duckduckgo.com/lite/?q=%s' "$QUERY" ;;
+            'idd '*) search_incognito 'https://duckduckgo.com/?q=%s' "${QUERY#* }" ;;
+            'iddl '*) search_incognito 'https://lite.duckduckgo.com/lite/?q=%s' "${QUERY#* }" ;;
+            'iddi '*) search_incognito 'https://duckduckgo.com/?q=%s!i' "${QUERY#* }" ;;
+            'igg '*) search_incognito 'https://www.google.com/search?q=%s' "${QUERY#* }" ;;
+            'iggi '*) search_incognito 'https://www.google.com/search?q=%s&tbm=isch' "${QUERY#* }" ;;
+            'inx '*) search_incognito 'https://search.nixos.org/packages?query=%s' "${QUERY#* }" ;;
+            'iwfa '*) search_incognito 'https://www.wolframalpha.com/input/?i=%s' "${QUERY#* }" ;;
+            'ird '*) search_incognito 'https://www.reddit.com/search?q=%s&utm_source=opensearch' "${QUERY#* }" ;;
+            'iyt '*) search_incognito 'https://www.youtube.com/results?search_QUERY=%s' "${QUERY#* }" ;;
+            'iaz '*) search_incognito 'https://www.amazon.com/s/ref=nb_sb_noss_2?url=search-alias%3Daps&field-keywords=%s' "${QUERY#* }" ;;
+            'ieb '*) search_incognito 'https://www.ebay.com/sch/i.html?_nkw=%s' "${QUERY#* }" ;;
+            'iwd '*) search_incognito 'https://www.merriam-webster.com/dictionary/%s' "${QUERY#* }" ;;
+            'i// '*) $BROWSER --incognito "${QUERY#* }" ;;
+            '// '*) $BROWSER "${QUERY#* }" ;;
+                 *) search 'https://lite.duckduckgo.com/lite/?q=%s' "$QUERY" ;;
+        esac ;;
+    YANK) 
+        case "$MODE" in
+            BOOKMARKS) cut_result "$DMENU_CHOICE" | xclip -sel clip ;;
+            TABS) resolve_id_to_url "$DMENU_CHOICE" | xclip -sel clip ;;
+            *) cut_result "$DMENU_CHOICE" | xclip -sel clip ;;
+        esac ;; 
+    TABS) 
+        DMENU_CHOICE=$(cut_result "$DMENU_CHOICE")
+        [ "$DMENU_CHOICE" ] && curl -s localhost:9222/json/activate/"$DMENU_CHOICE" >/dev/null  ;;
+    BOOKMARKS) 
+        DMENU_CHOICE=$(cut_result "$DMENU_CHOICE" | cut -f2)
+        [ "$DMENU_CHOICE" ] && $BROWSER "$DMENU_CHOICE" >/dev/null ;; 
+    HISTORY) 
+        DMENU_CHOICE=$(cut_result "$DMENU_CHOICE")
+        [ "$DMENU_CHOICE" ] && $BROWSER "$DMENU_CHOICE" > /dev/null ;;
+esac
