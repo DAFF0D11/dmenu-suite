@@ -1,12 +1,11 @@
-diff --git a/dmenu.c b/dmenu.c
-index 65f25ce..dfa59db 100644
---- a/dmenu.c
-+++ b/dmenu.c
-@@ -500,6 +500,119 @@ draw:
- 	drawmenu();
+Only in .: config.h
+diff -up ../dmenu-5.0/dmenu.c ./dmenu.c
+--- ../dmenu-5.0/dmenu.c	Wed Sep  2 18:37:07 2020
++++ ./dmenu.c	Wed Nov  4 15:25:27 2020
+@@ -501,6 +501,156 @@ draw:
  }
  
-+static void
+ static void
 +buttonpress(XEvent *e)
 +{
 +	struct item *item;
@@ -60,8 +59,11 @@ index 65f25ce..dfa59db 100644
 +	}
 +	if (ev->button != Button1)
 +		return;
++	/* disabled below, needs to be fixed */
++	/*
 +	if (ev->state & ~ControlMask)
 +		return;
++	*/
 +	if (lines > 0) {
 +		/* vertical list: (ctrl)left-click on item */
 +		w = mw - x;
@@ -119,26 +121,64 @@ index 65f25ce..dfa59db 100644
 +	}
 +}
 +
- static void
++static void
++mousemove(XEvent *e)
++{
++	struct item *item;
++	XPointerMovedEvent *ev = &e->xmotion;
++	int x = 0, y = 0, h = bh, w;
++
++	if (lines > 0) {
++		w = mw - x;
++		for (item = curr; item != next; item = item->right) {
++			y += h;
++			if (ev->y >= y && ev->y <= (y + h)) {
++				sel = item;
++				calcoffsets();
++				drawmenu();
++				return;
++			}
++		}
++	} else if (matches) {
++		x += inputw;
++		w = TEXTW("<");
++		for (item = curr; item != next; item = item->right) {
++			x += w;
++			w = MIN(TEXTW(item->text), mw - x - TEXTW(">"));
++			if (ev->x >= x && ev->x <= x + w) {
++				sel = item;
++				calcoffsets();
++				drawmenu();
++				return;
++			}
++		}
++	}
++}
++
++static void
  paste(void)
  {
-@@ -561,6 +674,9 @@ run(void)
+ 	char *p, *q;
+@@ -561,6 +711,12 @@ run(void)
  				break;
  			cleanup();
  			exit(1);
 +		case ButtonPress:
 +			buttonpress(&ev);
 +			break;
++		case MotionNotify:
++			mousemove(&ev);
++			break;
  		case Expose:
  			if (ev.xexpose.count == 0)
  				drw_map(drw, win, 0, 0, mw, mh);
-@@ -658,7 +774,8 @@ setup(void)
+@@ -658,7 +814,8 @@ setup(void)
  	/* create menu window */
  	swa.override_redirect = True;
  	swa.background_pixel = scheme[SchemeNorm][ColBg].pixel;
 -	swa.event_mask = ExposureMask | KeyPressMask | VisibilityChangeMask;
 +	swa.event_mask = ExposureMask | KeyPressMask | VisibilityChangeMask |
-+	                 ButtonPressMask;
++	                 ButtonPressMask | PointerMotionMask;
  	win = XCreateWindow(dpy, parentwin, x, y, mw, mh, 0,
  	                    CopyFromParent, CopyFromParent, CopyFromParent,
  	                    CWOverrideRedirect | CWBackPixel | CWEventMask, &swa);

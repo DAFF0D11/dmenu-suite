@@ -1,7 +1,7 @@
-diff --git a/dmenu_browser.c b/dmenu_browser.c
+diff --git a/dmenu.c b/dmenu.c
 index 65f25ce..15da0e9 100644
---- a/dmenu_browser.c
-+++ b/dmenu_browser.c
+--- a/dmenu.c
++++ b/dmenu.c
 @@ -32,6 +32,7 @@ struct item {
  	char *text;
  	struct item *left, *right;
