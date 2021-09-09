@@ -5,7 +5,7 @@
 # Note: keys should be lowercase, names should be uppercase
 
 dmenu_cmd(){
-    dmenu-suite -b -r -n $@
+    dmenu-suite -b -r -n "$@"
 }
 
 CHOICE=$(echo "
@@ -14,29 +14,29 @@ t-> TERMINAL
  " | dmenu_cmd)
 
 case "$CHOICE" in
-    b*) BROWSER_RESULT=$(echo "w-> WEATHER\nr-> REDDIT\ny-> YOUTUBE" | dmenu_cmd -p "Browser" )
+    b*) BROWSER_RESULT=$(printf "w-> WEATHER\nr-> REDDIT\ny-> YOUTUBE" | dmenu_cmd -p "Browser" )
         case "$BROWSER_RESULT" in
-            w*) WEATHER_RESULT=$(echo "d-> DAILY\nm-> MONTHLY\nh-> HOURLY\nt->TENDAY" | dmenu_cmd -p "Weather")
+            w*) WEATHER_RESULT=$(printf "d-> DAILY\nm-> MONTHLY\nh-> HOURLY\nt->TENDAY" | dmenu_cmd -p "Weather")
                 case "$WEATHER_RESULT" in
                     d*) "$BROWSER" "https://weather.com/weather/today/" > /dev/null ;;
                     m*) "$BROWSER" "https://weather.com/weather/monthly/" > /dev/null ;;
                     h*) "$BROWSER" "https://weather.com/weather/hourbyhour/" > /dev/null ;;
                 esac ;;
-            r*) REDDIT_RESULT=$(echo "r-> HOME\na-> ALL\nn-> NEW\nh-> HOT" | dmenu_cmd -p "Reddit")
+            r*) REDDIT_RESULT=$(printf "r-> HOME\na-> ALL\nn-> NEW\nh-> HOT" | dmenu_cmd -p "Reddit")
                 case "$REDDIT_RESULT" in
                     a*) "$BROWSER" "https://www.reddit.com/r/all/" > /dev/null ;;
                     r*) "$BROWSER" "https://www.reddit.com/" > /dev/null ;;
                     n*) "$BROWSER" "https://www.reddit.com/new/" > /dev/null ;;
                     h*) "$BROWSER" "https://www.reddit.com/hot/" > /dev/null ;;
                 esac ;;
-            y*) YOUTUBE_RESULT=$(echo "h-> HISTORY\ny-> SUBSCRIPTIONS\nw->WATCH-LATER" | dmenu_cmd -p "Youtube"  )
+            y*) YOUTUBE_RESULT=$(printf "h-> HISTORY\ny-> SUBSCRIPTIONS\nw->WATCH-LATER" | dmenu_cmd -p "Youtube"  )
                 case "$YOUTUBE_RESULT" in
                     y*) "$BROWSER" "https://www.youtube.com/feed/subscriptions" > /dev/null ;;
                     h*) "$BROWSER" "https://www.youtube.com/feed/history" > /dev/null ;;
                     w*) "$BROWSER" "https://www.youtube.com/playlist?list=WL" > /dev/null ;;
                 esac ;;
         esac ;;
-    t*) TERMINAL_RESULT=$(echo "h-> HTOP\nt-> TERMINAL" | dmenu_cmd -p "Terminal" )
+    t*) TERMINAL_RESULT=$(printf "h-> HTOP\nt-> TERMINAL" | dmenu_cmd -p "Terminal" )
         case "$TERMINAL_RESULT" in
             h*) $TERMINAL htop ;;
             t*) $TERMINAL ;;
