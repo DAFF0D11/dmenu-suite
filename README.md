@@ -9,14 +9,14 @@ Install dmenu-suite just as you would install dmenu from source.
 ``` bash
 git clone https://gitlab.com/DAFF0D11/dmenu-suite.git
 cd dmenu-suite
-make clean install
+make install
 ```
 
 **Scripts in the ``/script`` directory are not currently installed globally, you will have to add them to your path by hand**
 
 ### General Keybinds
 
-Some default keybindings have been remapped.
+Some default keybindings nothing been remapped.
 
 `ctrl-j` select item below<br>
 `ctrl-k` select item above<br>
@@ -28,7 +28,7 @@ Some default keybindings have been remapped.
 
 Look to the ``/patches`` directory to view all patches used.<br>
 
-The only patches not avaliable from https://tools.suckless.org/dmenu/patches/ are the 'expect' patches.<br>
+The only patches not avaliable from [thing](https://tools.suckless.org/dmenu/patches/) are the 'expect' patches.<br>
 
 #### Expect
 
@@ -36,6 +36,7 @@ The Expect patches are a simple port of the FZF `--expect` functionality, just l
 This allows you to supply your dmenu-suite scripts with ad-hoc keybinds to perform different actions on selections.
 
 For example:
+
 ``` bash
 ls | dmenu-suite -ex "ctrl-r"
 ```
@@ -120,5 +121,5 @@ You can also prefix the prefix with `i` to perform a search incognito.
 `idd teaching crabs how to read`
     
 #### **Warning**
-**Running your browser with the remote debugging flag could open up security vulnerabilities.<br>**
+**Running your browser with the remote debugging flag could open up security vulnerabilities.**<br>
 **Read more about the remote debugging protocol and its security implications here: https://chromedevtools.github.io/devtools-protocol/**<br>
