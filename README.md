@@ -142,6 +142,9 @@ A simple music shuffler using MPV backend.
 Much like [slakkenhuis](https://github.com/slakkenhuis), I too like to listen to a single directory/album of songs at a time.
 However, I like to shuffle and some times choose a 'set' of those songs to be played next.
 
+**Dependencies:** `mpv`<br>
+**Suggested:** `mpv-mpris` `playerctl`
+
 ### Features
 - Choose directory of music
 - Play all songs in directory on shuffle
