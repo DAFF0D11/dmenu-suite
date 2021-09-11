@@ -22,6 +22,8 @@ dmenu \- dynamic menu
 .IR color ]
 .RB [ \-w
 .IR windowid ]
+.RB [ \-d
+.IR digit ]
 .RB [ \-H
 .IR histfile ]
 .P
@@ -91,6 +93,9 @@ prints version information to stdout, then exits.
 .TP
 .BI \-w " windowid"
 embed into windowid.
+.TP
+.BI \-d " digit"
+preseslected item starting from 0.
 .TP
 .BI \-H " histfile"
 save input in histfile and use it for history navigation.

@@ -28,3 +28,5 @@ static int histnodup           = 1;	/* if 0, record repeated histories */
  * for example: " /?\"&[]"
  */
 static const char worddelimiters[] = " ";
+/* -d option; preselected item starting from 0 */
+static unsigned int preselected = 0;
