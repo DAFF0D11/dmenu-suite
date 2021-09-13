@@ -42,7 +42,7 @@ The only patches ***not*** available from [suckless.org](https://tools.suckless.
 
 ### Expect
 
-The Expect patches are a simple port of the FZF `--expect` functionality limited to `ctrl-[a-z]` keys.<br>
+The Expect patches are a port of the FZF `--expect` functionality limited to `ctrl-[a-z]` keys.<br>
 This allows you to supply your dmenu-suite scripts with ad-hoc keybinds to perform different actions on selections.
 
 For example:
@@ -173,3 +173,22 @@ Its highly recommended to set up [playerctl](https://github.com/altdesktop/playe
 `ctrl-enter` Multi select songs<br>
 
 #### Inspired by and borrowed from: [slakkenhuis/scripts/dmenu-mpv](https://github.com/slakkenhuis/scripts/blob/master/dmenu-mpv)
+
+## Demnu-which
+
+A crude replica of the Emacs which-key package.
+
+Unlike the emacs package, this script must crafted by you to define the commands in the list.<br>
+Some commands have been provided as examples to help you craft your own 'which-key' menus.
+
+***Sample commands rely on $TERMINAL and $BROWSER variables***
+
+### Features
+
+- Nest many commands behind a single keybind
+- Incremental command menus
+- Choose commands through (semantic) key-chords
+
+#### **Warning**
+When creating your own menus, you must use uppercase letters for the labels, and lowercase for the trigger keys(or vice versa).
+This is because we are abusing dmenu's case sensitive nature to label and trigger keys.
