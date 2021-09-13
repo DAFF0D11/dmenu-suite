@@ -179,7 +179,7 @@ Its highly recommended to set up [playerctl](https://github.com/altdesktop/playe
 A crude replica of the Emacs which-key package.
 
 Unlike the emacs package, this script must be crafted by __you__ to define the commands in the list.<br>
-Some commands have been provided as examples to help you craft your own 'which-key' menus.
+Some commands have been provided as examples to help you craft your own 'which-key' menus.<br>
 
 ***Sample commands rely on $TERMINAL and $BROWSER variables***
 
