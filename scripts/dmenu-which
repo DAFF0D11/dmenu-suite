@@ -16,7 +16,7 @@ t-> TERMINAL
 case "$CHOICE" in
     b*) BROWSER_RESULT=$(printf "w-> WEATHER\nr-> REDDIT\ny-> YOUTUBE" | dmenu_cmd -p "Browser" )
         case "$BROWSER_RESULT" in
-            w*) WEATHER_RESULT=$(printf "d-> DAILY\nm-> MONTHLY\nh-> HOURLY\nt->TENDAY" | dmenu_cmd -p "Weather")
+            w*) WEATHER_RESULT=$(printf "d-> DAILY\nm-> MONTHLY\nh-> HOURLY" | dmenu_cmd -p "Weather")
                 case "$WEATHER_RESULT" in
                     d*) "$BROWSER" "https://weather.com/weather/today/" > /dev/null ;;
                     m*) "$BROWSER" "https://weather.com/weather/monthly/" > /dev/null ;;
