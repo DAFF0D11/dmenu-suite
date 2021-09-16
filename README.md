@@ -184,14 +184,14 @@ Control tmux with dmenu.
 
 ### Features
 
-- Switch (panes,windows,sessions)
+- Switch to (pane,window,session)
 - Close (panes,windows,sessions)
 - Swap (panes,windows)
 - Grab (panes,windows)
 
 ### Setup
 
-Using `wmctrl` to focus the Tmux window automatically on switch, you need to set its title in your .tmux.conf, and in the script.
+Using `wmctrl` to focus a Tmux window automatically on switch, you need to set its title in your .tmux.conf, and in the script.
 
 In .tmux.conf
 ```
