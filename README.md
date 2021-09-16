@@ -96,7 +96,7 @@ Control your chromium browser through dmenu.<br>
 
 ### Setup 
 
-- You must start your browser with the debugging flag: `chromium --remote-debugging-port=9222`
+You must start your browser with the debugging flag: `chromium --remote-debugging-port=9222`
 
 ### Keybindings
 
@@ -174,14 +174,52 @@ Its highly recommended to set up [playerctl](https://github.com/altdesktop/playe
 
 #### Inspired by and borrowed from: [slakkenhuis/scripts/dmenu-mpv](https://github.com/slakkenhuis/scripts/blob/master/dmenu-mpv)
 
+## Dmenu-tmux
+
+Control tmux with dmenu.
+
+**Dependencies:** `tmux`<br>
+
+**Recommended:** `wmctrl`<br>
+
+### Features
+
+- Switch (panes,windows,sessions)
+- Close (panes,windows,sessions)
+- Swap (panes,windows)
+- Grab (panes,windows)
+
+### Setup
+
+Using `wmctrl` to focus the Tmux window automatically on switch, you need to set its title in your .tmux.conf, and in the script.
+
+In .tmux.conf
+```
+set-option -g set-titles-string 'TMUX' 
+```
+
+In dmenu-suite/scripts/dmenu-tmux.
+```
+TMUX_TITLE="TMUX"
+```
+
+### Keybinds
+
+`ctrl-p` List all panes(initial)<br>
+`ctrl-w` List all windows <br>
+`ctrl-s` List all sessions<br>
+`ctrl-g` Grab panes/windows<br>
+`ctrl-x` Swap pane/window<br>
+`ctrl-d` Close panes/windows/sessions<br>
+
 ## Demnu-which
 
 A crude replica of the Emacs which-key package.
 
-Unlike the emacs package, this script must be crafted by __you__ to define the commands in the list.<br>
-Some commands have been provided as examples to help you craft your own 'which-key' menus.<br>
+Unlike the emacs package, this script must be crafted by __you__ to define the commands in the list.
+Some commands have been provided as examples to help you craft your own 'which-key' menus.
 
-***Sample commands rely on $TERMINAL and $BROWSER variables***
+_Some sample commands rely on $TERMINAL and $BROWSER variables_
 
 ### Features
 
