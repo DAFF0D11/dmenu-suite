@@ -40,10 +40,10 @@ Some default dmenu keybindings have been remapped.
 
 The only patches ***not*** available from [suckless.org](https://tools.suckless.org/dmenu/patches/) are the 'expect' patches.<br>
 
-### Expect
+### [Expect](https://github.com/DAFF0D11/dmenu-suite/blob/master/patches/expect.diff)
 
 The Expect patches are a port of the FZF `--expect` functionality limited to `ctrl-[a-z]` keys.<br>
-This allows you to supply your dmenu-suite scripts with ad-hoc keybinds to perform different actions on selections.
+This allows you to supply your dmenu-suite scripts with ad hoc keybinds to perform different actions on selections.
 
 For example:
 
@@ -75,7 +75,7 @@ esac
 
 # Scripts
 
-## Dmenu-chromium
+## [Dmenu-chromium](https://github.com/DAFF0D11/dmenu-suite/blob/master/scripts/dmenu-chromium)
 
 Control your chromium browser through dmenu.<br>
 
@@ -145,12 +145,12 @@ You can also prefix any prefix with `i` to perform a search incognito.<br>
 **Running your browser with the remote debugging flag could open up security vulnerabilities.**<br>
 **Read more about the remote debugging protocol and its security implications here: https://chromedevtools.github.io/devtools-protocol/**<br>
 
-## Dmenu-mpv-music-shuffler
+## [Dmenu-mpv-music-shuffler](https://github.com/DAFF0D11/dmenu-suite/blob/master/scripts/Dmenu-mpv-music-shuffler)
 
 A simple music shuffler using MPV back end.
 
-Much like [slakkenhuis](https://github.com/slakkenhuis), I too like to listen to a single directory/album of songs at a time.
-However, I like to shuffle and some times choose a 'set' of those songs to be played next.<br>
+Most music players are far too complicated for my needs, and I always have MPV installed anyways.<br>
+I like to listen to a single directory of songs on shuffle and choose a 'set' of them to play next.<br>
 
 Its highly recommended to set up [playerctl](https://github.com/altdesktop/playerctl) with [mpv-mpris](https://github.com/hoyon/mpv-mpris) to control the mpv instance.
 
@@ -170,11 +170,11 @@ Its highly recommended to set up [playerctl](https://github.com/altdesktop/playe
 ### Keybinds
 `ctrl-l` List playlist<br>
 `ctrl-h` Choose song(s)<br>
-`ctrl-enter` Multi select songs<br>
+`ctrl-enter` Multi select songs to play next<br>
 
 #### Inspired by and borrowed from: [slakkenhuis/scripts/dmenu-mpv](https://github.com/slakkenhuis/scripts/blob/master/dmenu-mpv)
 
-## Dmenu-tmux
+## [Dmenu-tmux](https://github.com/DAFF0D11/dmenu-suite/blob/master/scripts/dmenu-tmux)
 
 Control tmux with dmenu.
 
@@ -212,7 +212,7 @@ TMUX_TITLE="TMUX"
 `ctrl-x` Swap pane/window<br>
 `ctrl-d` Close panes/windows/sessions<br>
 
-## Demnu-which
+## [Dmenu-which](https://github.com/DAFF0D11/dmenu-suite/blob/master/scripts/dmenu-which)
 
 A crude replica of the Emacs which-key package.
 
