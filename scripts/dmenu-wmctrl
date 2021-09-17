@@ -1,0 +1,22 @@
+#!/bin/sh
+
+RAW_LIST=$(wmctrl -l)
+WINDOW_ID=$(echo "$RAW_LIST" | cut -d ' ' -f1 )
+WINDOW_TITLE=$(echo "$RAW_LIST" | cut -d ' ' -f5-)
+
+RESULT=$(
+pr -2 -t -s <<eof
+$WINDOW_TITLE
+$WINDOW_ID
+eof
+)
+
+DMENU_CHOICE=$(echo "$RESULT" | dmenu-suite -c -l 30 -ex 'ctrl-x,ctrl-g')
+
+[ -z "$DMENU_CHOICE" ] && exit 0
+
+case "$DMENU_CHOICE" in
+    ctrl-g*) echo "$DMENU_CHOICE" | cut -f3 | xargs -I %% wmctrl -i -R %% ;;
+    ctrl-x*) echo "$DMENU_CHOICE" | cut -f3 | xargs -I %% wmctrl -i -c %% ;;
+    *) wmctrl -i -a $(echo "$DMENU_CHOICE" | cut -f2);;
+esac 

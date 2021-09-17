@@ -145,7 +145,7 @@ You can also prefix any prefix with `i` to perform a search incognito.<br>
 **Running your browser with the remote debugging flag could open up security vulnerabilities.**<br>
 **Read more about the remote debugging protocol and its security implications here: https://chromedevtools.github.io/devtools-protocol/**<br>
 
-## [Dmenu-mpv-music-shuffler](https://github.com/DAFF0D11/dmenu-suite/blob/master/scripts/Dmenu-mpv-music-shuffler)
+## [Dmenu-mpv-music-shuffler](https://github.com/DAFF0D11/dmenu-suite/blob/master/scripts/dmenu-mpv-music-shuffler)
 
 A simple music shuffler using MPV back end.
 
@@ -211,6 +211,28 @@ TMUX_TITLE="TMUX"
 `ctrl-g` Grab panes/windows<br>
 `ctrl-x` Swap pane/window<br>
 `ctrl-d` Close panes/windows/sessions<br>
+
+## [Dmenu-wmctrl](https://github.com/DAFF0D11/dmenu-suite/blob/master/scripts/dmenu-wmctrl)
+
+Control desktop windows with dmenu.
+
+**Dependencies:** `wmctrl`<br>
+
+### Features
+
+- Switch to windows
+- Grab windows from other workspaces and bring them to your current workspace
+- Close windows
+
+### Keybinds 
+
+`enter` Switch to window<br>
+`ctrl-g` Grab window(s)<br>
+`ctrl-x` Close window(s)<br>
+
+
+#### **Warning**
+If you are using DWM, be aware that the 'grab' functionality will not work due to the way DWM handles workspaces by default.
 
 ## [Dmenu-which](https://github.com/DAFF0D11/dmenu-suite/blob/master/scripts/dmenu-which)
 
