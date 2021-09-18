@@ -1,0 +1,60 @@
+#!/bin/sh
+
+# Set emacs title for wmctrl in your emacs config
+# (setq-default frame-title-format "EMACS")
+EMACS_TITLE="EMACS"
+EMACS_DAEMON="MAIN"
+
+get_all(){
+    emacs --batch --eval "(require 'server)" --eval "(mapc #'princ (read (server-eval-at \""$EMACS_DAEMON"\" '(prin1-to-string (mapcar (lambda (buffer) (format \"%s\\n\" buffer)) (buffer-list))))))" 2>/dev/null 
+}
+
+get_logs(){
+    "get_all" | grep "^\*" 
+}
+
+get_hidden(){
+    "get_all" | grep "^ " 
+}
+
+get_magit(){
+    "get_all" | grep "^magit" 
+}
+
+get_files(){
+    "get_all" | grep -v "^magit" | grep -v  "^ " | grep -v "^\*" 
+}
+
+case $1 in
+    a) MODE="all";;
+    f) MODE="files";;
+    g) MODE="magit";;
+    l) MODE="logs";;
+    o) MODE="hidden";;
+    *) MODE="all";;
+esac
+
+while true; do
+    case "$MODE" in 
+        all) MODE_LIST="get_all";;
+        files) MODE_LIST="get_files";;
+        hidden) MODE_LIST="get_hidden";;
+        logs) MODE_LIST="get_logs";;
+        magit) MODE_LIST="get_magit";;
+    esac
+
+    DMENU_CHOICE=$( "$MODE_LIST" | dmenu-suite -p "$MODE" -i -c -l 30 -ex 'ctrl-a,ctrl-f,ctrl-g,ctrl-l,ctrl-o,ctrl-x')
+
+    [ -z "$DMENU_CHOICE" ] && exit 0
+
+    case "$DMENU_CHOICE" in
+        ctrl-a*) MODE="all";;
+        ctrl-f*) MODE="files";;
+        ctrl-l*) MODE="logs";;
+        ctrl-g*) MODE="magit";;
+        ctrl-o*) MODE="hidden";;
+        ctrl-x*) echo "$DMENU_CHOICE" | cut -f2 | xargs -I %% emacsclient --socket-name="$EMACS_DAEMON" -e '(kill-buffer "'"%%"'")'>/dev/null; break;;
+          *) emacsclient --socket-name="$EMACS_DAEMON" -e '(switch-to-buffer "'"$DMENU_CHOICE"'")'>/dev/null
+              wmctrl -i -a "$(wmctrl -l | grep "$EMACS_TITLE"  | cut -d ' ' -f1)"; break;;
+    esac 
+done

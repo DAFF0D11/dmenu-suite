@@ -62,13 +62,13 @@ This allows you to easily handle different expected keys with just a case statem
 ``` sh
 #!/bin/sh
 
-CHOICE=$(ls | dmenu-suite -ex 'ctrl-r,ctrl-t,ctrl-y' -c -l 10)
+DMENU_CHOICE=$(ls | dmenu-suite -ex 'ctrl-r,ctrl-t,ctrl-y' -c -l 10)
 
-case "$CHOICE" in
-    ctrl-r*) echo r; echo "$CHOICE";;
-    ctrl-t*) echo t; echo "$CHOICE";;
-    ctrl-y*) echo y; echo "$CHOICE";;
-          *) echo normal; echo "$CHOICE";;
+case "$DMENU_CHOICE" in
+    ctrl-r*) echo "$DMENU_CHOICE";;
+    ctrl-t*) echo "$DMENU_CHOICE";;
+    ctrl-y*) echo "$DMENU_CHOICE";;
+          *) echo "$DMENU_CHOICE";;
 esac
 ```
 **Warning: passing ``-ex`` a key that is normally used by dmenu will override dmenu, and make it behave as *expected***
@@ -211,6 +211,54 @@ TMUX_TITLE="TMUX"
 `ctrl-g` Grab panes/windows<br>
 `ctrl-x` Swap pane/window<br>
 `ctrl-d` Close panes/windows/sessions<br>
+
+## [Dmenu-emacs](https://github.com/DAFF0D11/dmenu-suite/blob/master/scripts/dmenu-emacs)
+
+Control Emacs with dmenu.
+
+**Dependencies:** `emacs`<br>
+**Recommended:** `wmctrl`<br>
+
+### Features
+
+- Switch to buffer
+- close buffer(s)
+- View buffers
+- View file buffers
+- View hidden buffers
+- View log buffers
+- View magit buffers
+
+### Setup
+
+Emacs must be run in daemon mode with a name.
+
+`emacs --daemon=MAIN`
+
+Connect to the Emacs server with your prefered client
+
+Launch GUI Emacs `emacsclient -c --socket-name=MAIN`<br>
+Terminal emacs `emacsclient -nw --socket-name=MAIN`<br>
+
+To automatically switch to your Emacs window on selection, you must set its title in the script, as well as your Emacs configuration.<br>
+`EMACS_TITLE="EMACS"`<br>
+`(setq-default frame-title-format "EMACS")`<br>
+
+### Keybinds
+
+`ctrl-a` show all buffers (initial)<br>
+`ctrl-f` show file buffers<br>
+`ctrl-g` show magit buffers<br>
+`ctrl-l` show log buffers<br>
+`ctrl-o` show hidden buffers<br>
+`ctrl-x` close buffer(s)<br>
+`enter` switch to buffer<br>
+
+#### **Warning**
+
+I do not know Emacs or Elisp very well.
+
+The naming/grouping of buffers may be incorrect, and the Elisp may be unreliable.
 
 ## [Dmenu-wmctrl](https://github.com/DAFF0D11/dmenu-suite/blob/master/scripts/dmenu-wmctrl)
 
