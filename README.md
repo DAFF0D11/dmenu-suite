@@ -149,7 +149,7 @@ You can also prefix any prefix with `i` to perform a search incognito.<br>
 
 A simple music shuffler using MPV back end.
 
-Most music players are far too complicated for my needs, and I always have MPV installed anyways.<br>
+Most music players are far too complicated for my needs.<br>
 I like to listen to a single directory of songs on shuffle and choose a 'set' of them to play next.<br>
 
 Its highly recommended to set up [playerctl](https://github.com/altdesktop/playerctl) with [mpv-mpris](https://github.com/hoyon/mpv-mpris) to control the mpv instance.
