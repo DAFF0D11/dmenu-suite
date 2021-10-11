@@ -14,7 +14,7 @@ make install
 
 ***Scripts in the `/scripts` directory are not currently installed globally, you will have to add them to your path manually or directly call them.***
 
-### General Keybinds
+### General Keybindings
 
 Some default dmenu keybindings have been remapped.
 
@@ -43,7 +43,7 @@ The only patches ***not*** available from [suckless.org](https://tools.suckless.
 ### [Expect](https://github.com/DAFF0D11/dmenu-suite/blob/master/patches/expect.diff)
 
 The Expect patches are a port of the FZF `--expect` functionality limited to `ctrl-[a-z]` keys.<br>
-This allows you to supply your dmenu-suite scripts with ad hoc keybinds to perform different actions on selections.
+This allows you to supply your dmenu-suite scripts with ad hoc keybindings to perform different actions on selections.
 
 For example:
 
@@ -173,7 +173,7 @@ Its highly recommended to set up [playerctl](https://github.com/altdesktop/playe
 - Change $MUSIC to point at your music directory<br>
 - Start the mpv instance `dmenu-mpv-music-shuffler -i`<br>
 
-### Keybinds
+### Keybindings
 `ctrl-l` List playlist<br>
 `ctrl-h` Choose song(s)<br>
 `ctrl-enter` Multi select songs to play next<br>
@@ -209,7 +209,7 @@ In dmenu-suite/scripts/dmenu-tmux.
 TMUX_TITLE="TMUX"
 ```
 
-### Keybinds
+### Keybindings
 
 `ctrl-p` List all panes(initial)<br>
 `ctrl-w` List all windows <br>
@@ -250,7 +250,7 @@ To automatically switch to your Emacs window on selection, you must set its titl
 `EMACS_TITLE="EMACS"`<br>
 `(setq-default frame-title-format "EMACS")`<br>
 
-### Keybinds
+### Keybindings
 
 `ctrl-a` show all buffers (initial)<br>
 `ctrl-f` show file buffers<br>
@@ -276,7 +276,7 @@ Control desktop windows with dmenu.
 - Grab windows from other workspaces and bring them to your current workspace
 - Close windows
 
-### Keybinds 
+### Keybindings 
 
 `enter` Switch to window<br>
 `ctrl-g` Grab window(s)<br>
@@ -330,7 +330,7 @@ To search for keywords in files ( `ctrl-g` ) the supplemental script
 `dmenu-todo-notes-ripgrep` is required to be accessible, either in your path or
 directly called in `dmenu-todo-notes`
 
-### Keybinds
+### Keybindings
 
 `ctrl-d` Show DONE<br>
 `ctrl-n` Show NEXT<br>
