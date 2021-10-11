@@ -75,7 +75,7 @@ esac
 
 # Scripts
 
-While these scripts exist and work seperatly, you could easily combine them with
+While these scripts exist and work separately, you could easily combine them with
 little work.
 
 For example, combining `Dmenu-chromium` with `Dmenu-emacs` to show all browser tabs and
@@ -241,7 +241,7 @@ Emacs must be run in daemon mode.
 
 `emacs --daemon=MAIN`
 
-Connect to the Emacs server with your prefered client
+Connect to the Emacs server with your preferred client
 
 Launch GUI Emacs `emacsclient -c --socket-name=MAIN`<br>
 Terminal emacs `emacsclient -nw --socket-name=MAIN`<br>
@@ -327,7 +327,7 @@ Set the `TODO_LOCATION` variable with the location of your Todo file `$HOME/Docu
 Set the `NOTES_LOCATION` variable with the location of your Notes directory `$HOME/Documents/notes`
 
 To search for keywords in files ( `ctrl-g` ) the supplemental script
-`dmenu-todo-notes-ripgrep` is required to be accessable, either in your path or
+`dmenu-todo-notes-ripgrep` is required to be accessible, either in your path or
 directly called in `dmenu-todo-notes`
 
 ### Keybinds
@@ -340,7 +340,7 @@ directly called in `dmenu-todo-notes`
 `dmenu-todo-notes-ripgrep` script )<br>
 `ctrl-i` Create Note<br>
 `ctrl-l` Preview Note/Todo item<br>
-`ctrl-x` Prmote item, TODO -> NEXT -> DONE<br>
+`ctrl-x` Promote item, TODO -> NEXT -> DONE<br>
 `shift-enter` Create Todo item<br>
 
 #### **Tips**
