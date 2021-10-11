@@ -1,23 +1,19 @@
 #!/bin/sh
 
-    # Parse out TODO without newline spaces
-    # RES=$(cat tst | grep 'TODO' | dmenu -l 20 -c -p ' TODO >') || exit 0
-    # TODO=$(cat tst | sed -n "/$RES/,/^- TODO/p" | head -n -1)
-    # echo "$TODO"
-
-    # # Parse out DONE with newline spaces
-    # RES=$(grep -e '- DONE' tst | dmenu -l 20 -c -p ' DONE >') || exit 0
-    # DONE=$(sed -n "/$RES/,/^$/p" tst)
-    # echo "$DONE"
-
-TODO_LOCATION="$HOME/.sf/notes/todo.md"
-NOTES_LOCATION="$HOME/.sf/notes"
-
+TODO_LOCATION="$HOME/Documents/notes/todo"
+NOTES_LOCATION="$HOME/Documents/notes"
 
 open_editor(){
-    wmctrl -a TMUX
-    tmux new-window
-    tmux send-keys "nvim +$2 $1" Enter
+    # Using nvim with tmux
+    # wmctrl -a TMUX # Activate the window when opening notes/todos assuming the title is "TMUX"
+    # tmux new-window 
+    # tmux send-keys "$EDITOR $2 $1" Enter
+
+    # Using Emacs with emacsclient
+    # In your shell
+    # export EDITOR="emacsclient -a '' --socket-name=MAIN"
+
+    $EDITOR $2 $1 &
 }
 
 get_todo(){
@@ -65,6 +61,7 @@ get_full_cut(){
 }
 
 promote_item(){
+    # Takes selected items keyword to search and keyword to replace
     echo "$1" | cut -f2 |
     while IFS= read -r item; do
       LINE=$(cat -n "$TODO_LOCATION" | grep -e "$item" | cut -f1 | tr -d ' ')
@@ -73,10 +70,10 @@ promote_item(){
 }
 
 case $1 in
-    t) mode="todo";;
+    d) mode="done";;
     n) mode="next";;
     o) mode="notes";;
-    d) mode="done";;
+    t) mode="todo";;
     *) mode="todo";;
 esac
 
@@ -88,7 +85,7 @@ while true; do
         notes) mode_list="get_notes";;
     esac
 
-    dmenu_choice=$("$mode_list" | dmenu-suite -p "$mode" -c  -l 30 -ex 'ctrl-f,ctrl-g,ctrl-x,ctrl-l,ctrl-i,ctrl-o,ctrl-t,ctrl-n,ctrl-d,shift-enter')
+    dmenu_choice=$("$mode_list" | dmenu-suite -i -p "$mode" -c  -l 30 -ex 'ctrl-f,ctrl-g,ctrl-x,ctrl-l,ctrl-i,ctrl-o,ctrl-t,ctrl-n,ctrl-d,shift-enter')
 
     [ -z "$dmenu_choice" ] && exit 0
 
@@ -98,17 +95,16 @@ while true; do
         ctrl-t*) mode="todo";;
         ctrl-f*) mode="notes";;
         ctrl-g*)
-            grep=$(dmenu -l 30 -p 'Grep Notes' -y '~/src/dmenu-suite/scripts/dmenu-todo-notes-ripgrep') || break
+            grep=$(dmenu-suite -i -l 30 -p 'Grep Notes' -dy 'dmenu-todo-notes-ripgrep') || break
             file_line=$(echo "$grep" | cut -d ':' -f2)
             file_name=$(echo "$grep" | cut -d '/' -f1 | cut -d ':' -f1)
-            "open_editor" "$NOTES_LOCATION/$file_name" "$file_line" && break ;;
-
+            "open_editor" "$NOTES_LOCATION/$file_name" "+$file_line" && break ;;
         ctrl-i*)
-            note="$(echo | dmenu-suite -p 'New Note >')" || exit 0
+            note="$(echo | dmenu-suite -i -p 'New Note >')" || exit 0
             "open_editor" "$NOTES_LOCATION/$note.md" || exit 0; break ;;
         ctrl-l*)
             case "$mode" in
-              todo|next|done) "get_full_cut" "$dmenu_choice" | dmenu-suite -c -p 'preview' -l 30;;
+              todo|next|done) "get_full_cut" "$dmenu_choice" | dmenu-suite -c -p 'preview' -l 30 ;;
               notes) note_name=$(echo "$dmenu_choice" | cut -f2)
                   cat "$NOTES_LOCATION/$note_name" | dmenu-suite -p 'preview' -l 30;;
             esac ;;
@@ -117,14 +113,13 @@ while true; do
                 todo) "promote_item" "$dmenu_choice" "TODO" "NEXT";;
                 next) "promote_item" "$dmenu_choice" "NEXT" "DONE";;
             esac ;;
-   shift-enter*)
-       todo=$( echo "$dmenu_choice" | cut -f2 )
-       echo ";- TODO $todo"| tr ';' '\n' >> "$TODO_LOCATION"; break;;
+   shift-enter*) todo=$( echo "$dmenu_choice" | cut -f2 )
+                echo ";- TODO $todo"| tr ';' '\n' >> "$TODO_LOCATION"; break;;
               *) case "$mode" in
                   todo|next|done)
                       LN=$(cat -n "$TODO_LOCATION" | grep -e "$dmenu_choice" | cut -f1 | tr -d ' ')
-                      "open_editor" "$TODO_LOCATION" "$LN"; break ;;
-                  notes) "open_editor" "$NOTES_LOCATION/$dmenu_choice" "0" && break ;;
+                      "open_editor" "$TODO_LOCATION" "+$LN"; break ;;
+                  notes) "open_editor" "$NOTES_LOCATION/$dmenu_choice"; break ;;
                 esac
     esac
 done

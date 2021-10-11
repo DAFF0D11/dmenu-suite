@@ -12,7 +12,7 @@ cd dmenu-suite
 make install
 ```
 
-***Scripts in the `/scripts` directory are not currently installed globally, you will have to add them to your path manually.***
+***Scripts in the `/scripts` directory are not currently installed globally, you will have to add them to your path manually or directly call them.***
 
 ### General Keybinds
 
@@ -74,6 +74,12 @@ esac
 **Warning: passing ``-ex`` a key that is normally used by dmenu will override dmenu, and make it behave as *expected***
 
 # Scripts
+
+While these scripts exist and work seperatly, you could easily combine them with
+little work.
+
+For example, combining `Dmenu-chromium` with `Dmenu-emacs` to show all browser tabs and
+Emacs buffers in the same list.
 
 ## [Dmenu-chromium](https://github.com/DAFF0D11/dmenu-suite/blob/master/scripts/dmenu-chromium)
 
@@ -141,7 +147,7 @@ To search for a URL or local file.<br>
 You can also prefix any prefix with `i` to perform a search incognito.<br>
 `idd teaching crabs how to read`
     
-### **Warning**
+#### **Warning**
 **Running your browser with the remote debugging flag could open up security vulnerabilities.**<br>
 **Read more about the remote debugging protocol and its security implications here: https://chromedevtools.github.io/devtools-protocol/**<br>
 
@@ -231,7 +237,7 @@ Control Emacs with dmenu.
 
 ### Setup
 
-Emacs must be run in daemon mode with a name.
+Emacs must be run in daemon mode.
 
 `emacs --daemon=MAIN`
 
@@ -255,10 +261,8 @@ To automatically switch to your Emacs window on selection, you must set its titl
 `enter` switch to buffer<br>
 
 #### **Warning**
-
-I do not know Emacs or Elisp very well.
-
-The naming/grouping of buffers may be incorrect, and the Elisp may be unreliable.
+**I do not know Emacs or Elisp very well.**<br>
+**The naming/grouping of buffers may be incorrect, and the Elisp may be unreliable.**
 
 ## [Dmenu-wmctrl](https://github.com/DAFF0D11/dmenu-suite/blob/master/scripts/dmenu-wmctrl)
 
@@ -280,7 +284,7 @@ Control desktop windows with dmenu.
 
 
 #### **Warning**
-If you are using DWM, be aware that the 'grab' functionality will not work due to the way DWM handles workspaces by default.
+**If you are using DWM, be aware that the 'grab' functionality will not work due to the way DWM handles workspaces by default.**
 
 ## [Dmenu-which](https://github.com/DAFF0D11/dmenu-suite/blob/master/scripts/dmenu-which)
 
@@ -295,8 +299,65 @@ _Some sample commands rely on $TERMINAL and $BROWSER variables_
 
 - Nest many commands behind a single keybind
 - Incremental command menus
-- Choose commands through (semantic) key-chords
+- Choose commands through key-chords
 
 #### **Warning**
-When creating your own menus, you must use uppercase letters for the labels, and lowercase for the trigger keys(or vice versa).
-This is because we are abusing dmenu's case sensitive nature to label and trigger keys.
+**When creating your own menus, you must use uppercase letters for the labels, and lowercase for the trigger keys(or vice versa).**
+**This is because we are abusing dmenu's case sensitive nature to label and trigger keys.**
+
+## [Dmenu-todo-notes](https://github.com/DAFF0D11/dmenu-suite/blob/master/scripts/dmenu-todo-notes)
+
+Manage Todo list and Notes
+
+**Recommended:** `ripgrep`<br>
+
+### Features
+
+- Create Todo items and Notes
+- Preview Todo items and Notes
+- Open Todo/Notes in editor, at point
+- Search contents of Todo/Notes
+
+### Setup
+
+This script assumes your Notes are a single directory filled with only Note files, and your Todo list is a single file.<br>
+New notes use the `.md` file extension
+
+Set the `TODO_LOCATION` variable with the location of your Todo file `$HOME/Documents/notes/todo`<br>
+Set the `NOTES_LOCATION` variable with the location of your Notes directory `$HOME/Documents/notes`
+
+To search for keywords in files ( `ctrl-g` ) the supplemental script
+`dmenu-todo-notes-ripgrep` is required to be accessable, either in your path or
+directly called in `dmenu-todo-notes`
+
+### Keybinds
+
+`ctrl-d` Show DONE<br>
+`ctrl-n` Show NEXT<br>
+`ctrl-t` Show TODO<br>
+`ctrl-f` Search for Notes<br>
+`ctrl-g` Search keywords in Notes ( Requires `ripgrep` and
+`dmenu-todo-notes-ripgrep` script )<br>
+`ctrl-i` Create Note<br>
+`ctrl-l` Preview Note/Todo item<br>
+`ctrl-x` Prmote item, TODO -> NEXT -> DONE<br>
+`shift-enter` Create Todo item<br>
+
+#### **Tips**
+
+* When creating new Todo items, you may just start typing your todo item and and
+hit enter instead of shift-enter as long as no items are currently selected.
+
+* To create multi-line Todo items you should use the `;` character in place of `\n` to
+create newlines.<br>
+    ```
+    This is a new todo item heading;This is the second line;This is the third line
+    ```
+
+* When previewing Notes/Todo items, you can just hit escape once to go back to the
+main list instead of restarting the script.
+
+* To promote a Todo item, you must be in the same mode as the item you wish to
+  promote.
+  For instance, in `ctrl-t` todo mode, you use `ctrl-x` to promote an item to
+  NEXT, and then change to `ctrl-n` next mode to promote that same item to DONE.

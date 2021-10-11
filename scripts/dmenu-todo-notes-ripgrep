@@ -1,2 +1,5 @@
 #!/bin/sh
-rg -Nn "$1" ~/.sf/notes | cut -d '/' -f6-
+
+NOTES="$HOME/Documents/notes/"
+
+rg -Nn "$1" "$NOTES" | cut -d '/' -f6-

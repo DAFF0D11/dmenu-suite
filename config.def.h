@@ -12,6 +12,7 @@ static const char *fonts[] = {
 	"monospace:size=20"
 };
 static const char *prompt      = NULL;      /* -p  option; prompt to the left of input field */
+static const char *dynamic     = NULL;      /* -dy option; dynamic command to run on input change */
 static const char *colors[SchemeLast][2] = {
 	/*     fg         bg       */
 	[SchemeNorm] = { "#bbbbbb", "#222222" },
