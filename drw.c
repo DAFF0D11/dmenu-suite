@@ -548,6 +548,7 @@ drw_text_align(Drw *drw, int x, int y, unsigned int w, unsigned int h, const cha
 	return x;
 }
 
+
 void
 drw_map(Drw *drw, Window win, int x, int y, unsigned int w, unsigned int h)
 {
