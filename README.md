@@ -1,5 +1,6 @@
-# Dmenu-Suite
+# This repository has been moved to https://github.com/DAFF0D11/dafmenu and updated to dmenu 5.1+
 
+# Dmenu-Suite
 Dmenu-suite is a custom build of dmenu-5.0 and collection of scripts utilizing its features.
 
 ### Installation
